@@ -1,0 +1,11 @@
+CompileFlags:
+  Add:
+    - -std=c++26
+    - -I.
+  Remove:
+    - -std=c++*
+    - -stdlib=*
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None

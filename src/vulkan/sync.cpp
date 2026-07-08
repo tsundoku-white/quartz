@@ -1,0 +1,65 @@
+// sync.cpp
+#include "sync.h"
+#include <stdexcept>
+
+VulkanSync::VulkanSync(VulkanContext& context, uint32_t imageCount)
+    : m_context(context)
+    , m_device(context.get_device())
+{
+    m_imageAvailable.resize(MAX_FRAMES_IN_FLIGHT);
+    m_renderFinished.resize(imageCount);
+    m_inFlight.resize(MAX_FRAMES_IN_FLIGHT);
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailable[i]) != VK_SUCCESS || vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlight[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error(RED RESET "Failed to create sync objects");
+        }
+    }
+
+    for (size_t i = 0; i < imageCount; i++) {
+        if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinished[i]) != VK_SUCCESS) {
+            throw std::runtime_error(RED RESET"Failed to create sync objects");
+        }
+    }
+}
+
+VulkanSync::~VulkanSync()
+{
+    for (size_t i = 0; i < m_renderFinished.size(); i++) {
+        if (m_renderFinished[i] != VK_NULL_HANDLE) {
+            vkDestroySemaphore(m_device, m_renderFinished[i], nullptr);
+        }
+    }
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (m_imageAvailable[i] != VK_NULL_HANDLE) {
+            vkDestroySemaphore(m_device, m_imageAvailable[i], nullptr);
+        }
+        if (m_inFlight[i] != VK_NULL_HANDLE) {
+            vkDestroyFence(m_device, m_inFlight[i], nullptr);
+        }
+    }
+}
+
+void VulkanSync::wait_for_fence(uint32_t frameIndex)
+{
+    vkWaitForFences(m_device, 1, &m_inFlight[frameIndex], VK_TRUE, UINT64_MAX);
+}
+
+void VulkanSync::reset_fence(uint32_t frameIndex)
+{
+    vkResetFences(m_device, 1, &m_inFlight[frameIndex]);
+}
+
+void VulkanSync::wait_for_all_fences()
+{
+    vkDeviceWaitIdle(m_device);
+}
