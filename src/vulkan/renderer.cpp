@@ -1,9 +1,11 @@
 #include "renderer.h"
 #include "context.h"
 #include "swapchain.h"
+#include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
+#include "buffer.h"
 
 static std::vector<char> read_file(const std::string& filename)
 {
@@ -91,7 +93,6 @@ void VulkanRenderer::create_graphics_pipeline()
     if (vertex_shader_code.empty() || fragment_shader_code.empty())
     {
       throw std::runtime_error(RED RESET "Failed to find file - termination");
-
     }
 
     VkShaderModule vertex_shader_module = create_shader_module(vertex_shader_code);
@@ -117,12 +118,15 @@ void VulkanRenderer::create_graphics_pipeline()
     dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
     dynamic_state.pDynamicStates = dynamic_states.data();
 
+    auto binding_description = Vertex::get_binding_description();
+    auto attribute_descriptions = Vertex::get_attribute_descriptions();
+
     VkPipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = 0;
-    vertex_input_info.pVertexBindingDescriptions = nullptr;
-    vertex_input_info.vertexAttributeDescriptionCount = 0;
-    vertex_input_info.pVertexAttributeDescriptions = nullptr;
+    vertex_input_info.vertexBindingDescriptionCount = 1;
+    vertex_input_info.pVertexBindingDescriptions = &binding_description;
+    vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
+    vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly{};
     input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

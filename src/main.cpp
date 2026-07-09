@@ -16,7 +16,9 @@ int main() {
     VulkanRenderer      renderer(context, swapchain);
     VulkanCommands      commands(context);
     VulkanSync          sync(context, swapchain.get_image_count());
-    VulkanFrameManager  frameManager(window, context, swapchain, renderer, commands, sync);
+    Buffer              buffer(context);
+
+    VulkanFrameManager  frameManager(window, context, swapchain, renderer, commands, sync, buffer);
 
     while (!window.should_close()) {
       window.poll_events();

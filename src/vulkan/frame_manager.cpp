@@ -8,13 +8,15 @@ VulkanFrameManager::VulkanFrameManager(
     VulkanSwapchain& swapchain,
     VulkanRenderer& renderer,
     VulkanCommands& commands,
-    VulkanSync& sync)
+    VulkanSync& sync,
+    Buffer& buffer)
     : m_window(window)
     , m_context(context)
     , m_swapchain(swapchain)
     , m_renderer(renderer)
     , m_commands(commands)
     , m_sync(sync)
+    , m_buffer(buffer)
 {
     create_framebuffers();
     m_commands.create_command_buffers(swapchain.get_image_count());
@@ -62,10 +64,8 @@ void VulkanFrameManager::draw_frame()
     }
 
     m_sync.wait_for_fence(m_current_frame);
-    m_sync.wait_for_fence(m_current_frame);
     m_sync.reset_fence(m_current_frame);
 
-    // Acquire image
     uint32_t image_index;
     VkResult result = vkAcquireNextImageKHR(
         m_context.get_device(),
@@ -83,7 +83,6 @@ void VulkanFrameManager::draw_frame()
         throw std::runtime_error("Failed to acquire swapchain image");
     }
 
-    // Reset and record command buffer indexed by m_currentFrame
     VkCommandBuffer command_buffer = m_commands.get_command_buffer(m_current_frame);
     vkResetCommandBuffer(command_buffer, 0);
     m_commands.record_command_buffer(
@@ -91,10 +90,11 @@ void VulkanFrameManager::draw_frame()
         m_renderer.get_render_pass(),
         m_framebuffers[image_index],
         m_renderer.get_pipeline(),
-        m_swapchain.get_extent()
+        m_swapchain.get_extent(),
+        m_buffer.get_vertex_buffer(),
+        m_buffer.get_vertex_count()
     );
 
-    // Submit command buffer
     VkSubmitInfo submit_info{};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -117,7 +117,6 @@ void VulkanFrameManager::draw_frame()
         throw std::runtime_error("Failed to submit draw command buffer");
     }
 
-    // Present
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present_info.waitSemaphoreCount = 1;
@@ -138,7 +137,6 @@ void VulkanFrameManager::draw_frame()
         throw std::runtime_error("Failed to present swapchain image");
     }
 
-    // Advance to next frame-in-flight slot
     m_current_frame = (m_current_frame + 1) % VulkanSync::get_frame_count();
 }
 

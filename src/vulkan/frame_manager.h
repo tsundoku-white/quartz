@@ -6,6 +6,7 @@
 #include "renderer.h"
 #include "command.h"
 #include "sync.h"
+#include "buffer.h"
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -17,7 +18,8 @@ public:
         VulkanSwapchain& swapchain,
         VulkanRenderer& renderer,
         VulkanCommands& commands,
-        VulkanSync& sync
+        VulkanSync& sync,
+        Buffer& buffer
     );
     ~VulkanFrameManager();
     
@@ -31,6 +33,7 @@ private:
     VulkanRenderer& m_renderer;
     VulkanCommands& m_commands;
     VulkanSync& m_sync;
+    Buffer &m_buffer;
     VkExtent2D m_last_extent{};
     
     std::vector<VkFramebuffer> m_framebuffers;

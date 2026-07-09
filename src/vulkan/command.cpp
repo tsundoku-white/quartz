@@ -1,4 +1,3 @@
-// command.cpp
 #include "command.h"
 #include <stdexcept>
 
@@ -51,7 +50,9 @@ void VulkanCommands::record_command_buffer(
     VkRenderPass render_pass,
     VkFramebuffer framebuffer,
     VkPipeline pipeline,
-    VkExtent2D extent)
+    VkExtent2D extent,
+    VkBuffer vertex_buffer,
+    uint32_t vertex_count)
 {
     
     VkCommandBuffer command_buffer = m_command_buffers[frame_index];
@@ -86,8 +87,12 @@ void VulkanCommands::record_command_buffer(
     scissor.offset = {0, 0};
     scissor.extent = extent;
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-    
-    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+    VkBuffer vertex_buffers[] = { vertex_buffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+
+    vkCmdDraw(command_buffer, vertex_count, 1, 0, 0);
     
     vkCmdEndRenderPass(command_buffer);
     

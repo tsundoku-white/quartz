@@ -23,8 +23,8 @@ class VulkanRenderer {
     VkPipelineLayout  m_pipeline_layout = VK_NULL_HANDLE;
     VkRenderPass      m_render_pass     = VK_NULL_HANDLE;
 
-    std::string m_frag_shader_path = "glsl/g_frag.spv";
-    std::string m_vert_shader_path = "glsl/g_vert.spv";
+    std::string m_frag_shader_path = "shaders/g_frag.spv";
+    std::string m_vert_shader_path = "shaders/g_vert.spv";
 
     VulkanContext &m_context;
     VulkanSwapchain &m_swapchain;
