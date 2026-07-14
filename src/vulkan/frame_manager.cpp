@@ -1,5 +1,6 @@
 // frame_manager.cpp
 #include "frame_manager.h"
+#include "buffer.h"
 #include <stdexcept>
 
 VulkanFrameManager::VulkanFrameManager(
@@ -9,7 +10,9 @@ VulkanFrameManager::VulkanFrameManager(
     VulkanRenderer& renderer,
     VulkanCommands& commands,
     VulkanSync& sync,
-    Buffer& buffer)
+    VulkanBuffer& buffer,
+    Camera& camera
+    )
     : m_window(window)
     , m_context(context)
     , m_swapchain(swapchain)
@@ -17,6 +20,7 @@ VulkanFrameManager::VulkanFrameManager(
     , m_commands(commands)
     , m_sync(sync)
     , m_buffer(buffer)
+    , m_camera(camera)
 {
     create_framebuffers();
     m_commands.create_command_buffers(swapchain.get_image_count());
@@ -56,7 +60,8 @@ void VulkanFrameManager::draw_frame()
 {
   auto [w, h] = m_window.get_framebuffer_size();
     if (static_cast<uint32_t>(w) != m_last_extent.width ||
-        static_cast<uint32_t>(h) != m_last_extent.height)
+        static_cast<uint32_t>(h) != m_last_extent.height
+        && w > 0 && h > 0)
     {
         recreate_swapchain();
         m_last_extent = m_swapchain.get_extent();
@@ -83,6 +88,8 @@ void VulkanFrameManager::draw_frame()
         throw std::runtime_error("Failed to acquire swapchain image");
     }
 
+    m_camera.update(m_current_frame, m_swapchain.get_extent());
+
     VkCommandBuffer command_buffer = m_commands.get_command_buffer(m_current_frame);
     vkResetCommandBuffer(command_buffer, 0);
     m_commands.record_command_buffer(
@@ -90,9 +97,13 @@ void VulkanFrameManager::draw_frame()
         m_renderer.get_render_pass(),
         m_framebuffers[image_index],
         m_renderer.get_pipeline(),
+        m_renderer.get_pipeline_layout(),
+        m_camera.get_descriptor_set(m_current_frame),
         m_swapchain.get_extent(),
         m_buffer.get_vertex_buffer(),
-        m_buffer.get_vertex_count()
+        m_buffer.get_vertex_count(),
+        m_buffer.get_index_buffer(),
+        m_buffer.get_index_count()
     );
 
     VkSubmitInfo submit_info{};

@@ -30,3 +30,9 @@
 class Window;
 class VulkanContext;
 class VulkanSwapchain;
+class VulkanRenderer;
+class VulkanCommands;
+class VulkanBuffer;
+class VulkanSync;
+class Camera;
+class Texture;

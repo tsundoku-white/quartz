@@ -20,6 +20,8 @@ class VulkanSwapchain {
     [[nodiscard]] std::vector<VkImageView>      get_image_views()  const { return m_image_views; }
     [[nodiscard]] VkFormat      get_image_format()  const { return m_image_format; }
     [[nodiscard]] VkSwapchainKHR get_swapchain() const { return m_swapchain; }
+    [[nodiscard]] std::vector<VkImage> get_image() const { return m_images; }
+
 
     ~VulkanSwapchain();
     void cleanup();

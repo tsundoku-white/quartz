@@ -1,20 +1,19 @@
 #pragma once
 
 #include "../core/core.h"
-#include "context.h"
-#include "swapchain.h"
 #include <vulkan/vulkan_core.h>
 
 class VulkanRenderer {
   public: 
-    VulkanRenderer(VulkanContext &context, VulkanSwapchain &swapchain);
+    VulkanRenderer(VulkanContext &context, VulkanSwapchain &swapchain, Camera &camera);
     ~VulkanRenderer();
 
     VulkanRenderer(const VulkanRenderer&) = delete;
     VulkanRenderer& operator=(const VulkanRenderer) = delete;
 
-    [[nodiscard]] VkRenderPass get_render_pass() const { return m_render_pass; }
-    [[nodiscard]] VkPipeline   get_pipeline()    const { return m_pipeline; }
+    [[nodiscard]] VkRenderPass      get_render_pass()     const { return m_render_pass;     }
+    [[nodiscard]] VkPipeline        get_pipeline()        const { return m_pipeline;        }
+    [[nodiscard]] VkPipelineLayout  get_pipeline_layout() const { return m_pipeline_layout; }
 
     void cleanup();
 
@@ -28,6 +27,7 @@ class VulkanRenderer {
 
     VulkanContext &m_context;
     VulkanSwapchain &m_swapchain;
+    Camera &m_camera;
 
     void create_shader();
     void create_graphics_pipeline();

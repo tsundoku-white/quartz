@@ -1,5 +1,5 @@
-// frame_manager.h
 #pragma once
+
 #include "window.h"
 #include "context.h"
 #include "swapchain.h"
@@ -7,6 +7,8 @@
 #include "command.h"
 #include "sync.h"
 #include "buffer.h"
+#include "camera.h"
+#include <regex>
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -19,7 +21,8 @@ public:
         VulkanRenderer& renderer,
         VulkanCommands& commands,
         VulkanSync& sync,
-        Buffer& buffer
+        VulkanBuffer& buffer,
+        Camera& camera
     );
     ~VulkanFrameManager();
     
@@ -33,7 +36,8 @@ private:
     VulkanRenderer& m_renderer;
     VulkanCommands& m_commands;
     VulkanSync& m_sync;
-    Buffer &m_buffer;
+    VulkanBuffer &m_buffer;
+    Camera &m_camera;
     VkExtent2D m_last_extent{};
     
     std::vector<VkFramebuffer> m_framebuffers;

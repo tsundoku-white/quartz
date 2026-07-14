@@ -1,7 +1,9 @@
 #pragma once
 #include "context.h"
+#include <cstdint>
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 class VulkanCommands {
 public:
@@ -17,9 +19,13 @@ public:
         VkRenderPass render_pass,
         VkFramebuffer framebuffer,
         VkPipeline pipeline,
+        VkPipelineLayout pipeline_layout,
+        VkDescriptorSet descriptor_set,
         VkExtent2D extent,
         VkBuffer vertex_buffer,
-        uint32_t vertex_count
+        uint32_t vertex_count,
+        VkBuffer index_buffer,
+        uint32_t index_count
     );
     
     [[nodiscard]] VkCommandBuffer get_command_buffer(uint32_t index) const { return m_command_buffers[index]; }

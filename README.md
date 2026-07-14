@@ -9,7 +9,7 @@ Input:
 
 Rendering:
     model loader 3d
-    textures
+    [x] textures
     animations
     bloom
     normal mapping

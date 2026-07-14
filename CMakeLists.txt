@@ -5,9 +5,22 @@ set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Find required packages
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
+
+find_path(GLM_INCLUDE_DIR glm/glm.hpp
+    PATHS ${CMAKE_SOURCE_DIR}/ext/glm
+    REQUIRED
+)
+
+find_path(STB_INCLUDE_DIR stb_image.h, stb_truetype.h, stb_image_write.h
+    PATHS ${CMAKE_SOURCE_DIR}/ext/stb
+    REQUIRED
+)
+message("STB include dir: ${STB_INCLUDE_DIR}")
 
 # Add executable
 add_executable(quartz
@@ -20,6 +33,9 @@ add_executable(quartz
     src/vulkan/sync.cpp
     src/vulkan/buffer.cpp
     src/vulkan/frame_manager.cpp 
+    src/vulkan/camera.cpp
+    src/vulkan/texture.cpp
+    src/vulkan/text.cpp
 )
 
 target_precompile_headers(quartz PRIVATE
@@ -27,10 +43,11 @@ target_precompile_headers(quartz PRIVATE
 )
 
 
-# Include directories
 target_include_directories(quartz PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${Vulkan_INCLUDE_DIRS}
+    ${GLM_INCLUDE_DIR}
+    ${STB_INCLUDE_DIR}
 )
 
 # Link libraries
@@ -95,6 +112,12 @@ foreach(GLSL ${GLSL_SOURCES})
     )
     list(APPEND SPIRV_OUTPUTS ${SPIRV})
 endforeach()
+
+add_custom_command(TARGET quartz POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/assets
+        $<TARGET_FILE_DIR:quartz>/assets
+)
 
 add_custom_target(Shaders ALL DEPENDS ${SPIRV_OUTPUTS})
 add_dependencies(quartz Shaders)

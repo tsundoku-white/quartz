@@ -4,9 +4,20 @@
 #include <stdexcept>
 #include "../core/core.h"
 
-bool Window::is_key_pressed(Key key)
+bool Window::is_key_pressed(Key key, PRESSED_TYPE pt)
 {
-    return glfwGetKey(m_handle, static_cast<int>(key)) == GLFW_PRESS;
+  bool is_down = glfwGetKey(m_handle, static_cast<int>(key)) == GLFW_PRESS;
+
+  if (pt == LOOP)
+  {
+    return is_down;
+  }
+
+  // pt == ONCE
+  bool &was_pressed = m_key_was_pressed[static_cast<int>(key)];
+  bool triggered = is_down && !was_pressed;
+  was_pressed = is_down;
+  return triggered;
 }
 
 Window::Window()
@@ -25,6 +36,7 @@ Window::Window()
     glfwTerminate();
     throw std::runtime_error(RED "Failed to create window\n" RESET);
   }
+
 
   std::print(GREEN "Pass:  " RESET "Create window\n");
 }

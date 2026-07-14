@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 #include "buffer.h"
+#include "camera.h"
 
 static std::vector<char> read_file(const std::string& filename)
 {
@@ -151,7 +152,7 @@ void VulkanRenderer::create_graphics_pipeline()
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
@@ -192,10 +193,15 @@ void VulkanRenderer::create_graphics_pipeline()
     color_blending.blendConstants[2] = 0.0f;
     color_blending.blendConstants[3] = 0.0f;
 
+    // The descriptor set layout (UBO @ binding 0 + combined image sampler @ binding 1)
+    // is owned and built by Camera, since Camera also owns the pool/sets/writes for it.
+    // Pipeline creation only needs to reference the finished layout.
+    VkDescriptorSetLayout set_layout = m_camera.get_descriptor_set_layout();
+
     VkPipelineLayoutCreateInfo pipeline_layout_info{};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.setLayoutCount = 0;
-    pipeline_layout_info.pSetLayouts = nullptr;
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &set_layout;
     pipeline_layout_info.pushConstantRangeCount = 0;
     pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -241,10 +247,10 @@ void VulkanRenderer::create_graphics_pipeline()
     vkDestroyShaderModule(m_context.get_device(), fragment_shader_module, nullptr);
 }
 
-// In renderer.cpp
-VulkanRenderer::VulkanRenderer(VulkanContext& context, VulkanSwapchain& swapchain)
+VulkanRenderer::VulkanRenderer(VulkanContext& context, VulkanSwapchain& swapchain, Camera &camera)
     : m_context(context)
     , m_swapchain(swapchain)
+    , m_camera(camera)
 {
     try {
         create_render_pass();
@@ -272,6 +278,5 @@ void VulkanRenderer::cleanup()
 
 VulkanRenderer::~VulkanRenderer()
 {
-  // this is just if work if there is a shaderpath error then it will be cleaned in main()
   cleanup();
 }

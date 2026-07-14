@@ -1,12 +1,12 @@
-// sync.h - Keep MAX_FRAMES_IN_FLIGHT
 #pragma once
+
 #include "context.h"
 #include <vulkan/vulkan.h>
 #include <vector>
 
 class VulkanSync {
 public:
-    VulkanSync(VulkanContext& context, uint32_t imageCount);
+    VulkanSync(VulkanContext& context, VulkanSwapchain &swapchain);
     ~VulkanSync();
 
     VulkanSync(const VulkanSync&) = delete;
@@ -24,7 +24,7 @@ public:
 
 private:
     VulkanContext& m_context;
-    VkDevice       m_device = VK_NULL_HANDLE;
+    VulkanSwapchain &m_swapchain;
     
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 3;
     

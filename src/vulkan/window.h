@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/core.h"
+#include <unordered_map>
 
 struct GLFWwindow;
 
@@ -132,6 +133,10 @@ enum Key {
   KEY_MENU            = 348
 };
 
+enum PRESSED_TYPE {
+  ONCE, LOOP
+};
+
 class Window {
   public:
     Window();
@@ -157,10 +162,11 @@ class Window {
       glfwSetWindowShouldClose(m_handle, value ? GLFW_TRUE : GLFW_FALSE);
     }
 
-    bool is_key_pressed(Key key);
+    bool is_key_pressed(Key key, PRESSED_TYPE pt = LOOP);
   private:
     GLFWwindow   *m_handle  = nullptr;
     uint32_t      m_width   = 600;
     uint32_t      m_height  = 600;
     std::string   m_title   = "untitled";
+    std::unordered_map<int, bool> m_key_was_pressed;
 };

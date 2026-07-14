@@ -1,4 +1,5 @@
 #include "command.h"
+#include <cstdint>
 #include <stdexcept>
 
 VulkanCommands::VulkanCommands(VulkanContext& context) 
@@ -50,9 +51,14 @@ void VulkanCommands::record_command_buffer(
     VkRenderPass render_pass,
     VkFramebuffer framebuffer,
     VkPipeline pipeline,
+    VkPipelineLayout pipeline_layout,
+    VkDescriptorSet descriptor_set,
     VkExtent2D extent,
     VkBuffer vertex_buffer,
-    uint32_t vertex_count)
+    uint32_t vertex_count,
+    VkBuffer index_buffer,
+    uint32_t index_count
+    )
 {
     
     VkCommandBuffer command_buffer = m_command_buffers[frame_index];
@@ -73,7 +79,10 @@ void VulkanCommands::record_command_buffer(
     vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
     
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    
+
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
+
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -91,11 +100,11 @@ void VulkanCommands::record_command_buffer(
     VkBuffer vertex_buffers[] = { vertex_buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+    vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDraw(command_buffer, vertex_count, 1, 0, 0);
-    
+    vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
+
     vkCmdEndRenderPass(command_buffer);
-    
     end_command_buffer(command_buffer);
 }
 
