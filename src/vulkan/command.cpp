@@ -1,4 +1,5 @@
 #include "command.h"
+#include <array>
 #include <cstdint>
 #include <stdexcept>
 
@@ -57,8 +58,9 @@ void VulkanCommands::record_command_buffer(
     VkBuffer vertex_buffer,
     uint32_t vertex_count,
     VkBuffer index_buffer,
-    uint32_t index_count
-    )
+    uint32_t index_count,
+    VkIndexType index_type
+)
 {
     
     VkCommandBuffer command_buffer = m_command_buffers[frame_index];
@@ -72,9 +74,11 @@ void VulkanCommands::record_command_buffer(
     render_pass_info.renderArea.offset = {0, 0};
     render_pass_info.renderArea.extent = extent;
     
-    VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    render_pass_info.clearValueCount = 1;
-    render_pass_info.pClearValues = &clear_color;
+    std::array<VkClearValue, 2> clear_values{};
+    clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clear_values[1].depthStencil = {1.0f, 0};
+    render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+    render_pass_info.pClearValues = clear_values.data();
     
     vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
     
@@ -100,7 +104,7 @@ void VulkanCommands::record_command_buffer(
     VkBuffer vertex_buffers[] = { vertex_buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-    vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, index_type);
 
     vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 

@@ -32,7 +32,7 @@ class Texture
 
     uint32_t m_tex_width  = 0;
     uint32_t m_tex_height = 0;
-    std::string m_path = "assets/textures/default_texture.jpg";
+    std::string m_path = "assets/textures/green.png";
 
     void create_command_pool();
     void create_texture_image();

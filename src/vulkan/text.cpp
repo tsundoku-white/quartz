@@ -1,5 +1,6 @@
 // text.cpp
 #include "text.h"
+#include "src/vulkan/context.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -14,13 +15,16 @@
 
 #include "buffer.h"
 
-Text::Text() = default;
+Text::Text(VulkanContext &context, VulkanBuffer &buffer, uint32_t frame_count)
+  : m_context(context), m_buffer(buffer)
+{
+
+}
 Text::~Text()
 {
   free(m_fontBuffer); 
 }
 
-// Wrapper around stbtt_GetCodepointSDF for a single glyph.
 static unsigned char* generate_glyph_sdf(
     stbtt_fontinfo* info,
     int codepoint,
@@ -60,13 +64,12 @@ void Text::loadFont(const std::string& fontPath, float pixelHeight)
   m_pixelHeight = pixelHeight;
   float scale = stbtt_ScaleForPixelHeight(&info, pixelHeight);
 
-  // --- simple row packer ---
+
   const int atlasW = 512;
   int penX = 0, penY = 0, rowH = 0;
   m_atlasWidth = atlasW;
 
-  // First pass: generate all SDFs, figure out atlas height as we go.
-  std::vector<std::pair<int, unsigned char*>> sdfs; // codepoint, buffer
+  std::vector<std::pair<int, unsigned char*>> sdfs;
   for (int codepoint = 32; codepoint <= 126; ++codepoint)
   {
     int ax, lsb;
@@ -94,7 +97,7 @@ void Text::loadFont(const std::string& fontPath, float pixelHeight)
     }
     else
     {
-      g.atlas_x = g.atlas_y = 0; // e.g. space — nothing to draw
+      g.atlas_x = g.atlas_y = 0;
     }
 
     m_glyphs[codepoint] = g;
@@ -103,7 +106,6 @@ void Text::loadFont(const std::string& fontPath, float pixelHeight)
   m_atlasHeight = penY + rowH;
   m_atlasPixels.assign(static_cast<size_t>(m_atlasWidth) * m_atlasHeight, 0);
 
-  // Second pass: blit each SDF into the atlas buffer at its assigned position.
   for (auto& [codepoint, sdf] : sdfs)
   {
     const GlyphInfo& g = m_glyphs[codepoint];
@@ -116,27 +118,48 @@ void Text::loadFont(const std::string& fontPath, float pixelHeight)
     stbtt_FreeSDF(sdf, nullptr);
   }
 
+  //db
   stbi_write_png("atlas_debug.png", m_atlasWidth, m_atlasHeight, 1,
                m_atlasPixels.data(), m_atlasWidth);
-
-  // m_atlasPixels is now ready to upload to a GPU texture (or write to PNG for debugging).
 }
 
 void Text::text(float x, float y, const std::string& str, uint32_t size)
 {
-  // No font loading here — just walk the string, look up glyphs, emit quads.
-  float penX = x;
-  for (size_t i = 0; i < str.size(); ++i)
-  {
-    auto it = m_glyphs.find(str[i]);
-    if (it == m_glyphs.end()) continue;
+    float scale = size / m_pixelHeight;
+    float penX = x;
 
-    const GlyphInfo& g = it->second;
-    // TODO: push a quad here using g.atlas_x/atlas_y/width/height for UVs
-    // and penX + g.xoff, y + g.yoff for position, scaled by (size / m_pixelHeight).
+    for (char c : str) {
+        auto it = m_glyphs.find(c);
+        if (it == m_glyphs.end()) continue;
+        const GlyphInfo& g = it->second;
 
-    penX += g.advance * (size / m_pixelHeight);
+        float x0 = penX + g.xoff * scale;
+        float y0 = y   + g.yoff * scale;
+        float x1 = x0 + g.width  * scale;
+        float y1 = y0 + g.height * scale;
 
+        float u0 = g.atlas_x / (float)m_atlasWidth;
+        float v0 = g.atlas_y / (float)m_atlasHeight;
+        float u1 = (g.atlas_x + g.width)  / (float)m_atlasWidth;
+        float v1 = (g.atlas_y + g.height) / (float)m_atlasHeight;
 
-  }
+        // two triangles: (x0,y0)-(x1,y0)-(x1,y1) and (x0,y0)-(x1,y1)-(x0,y1)
+        m_vertices.push_back({{x0,y0},{u0,v0}});
+        m_vertices.push_back({{x1,y0},{u1,v0}});
+        m_vertices.push_back({{x1,y1},{u1,v1}});
+        m_vertices.push_back({{x0,y0},{u0,v0}});
+        m_vertices.push_back({{x1,y1},{u1,v1}});
+        m_vertices.push_back({{x0,y1},{u0,v1}});
+
+        penX += g.advance * scale;
+    }
+}
+
+void Text::update(uint32_t current_frame)
+{
+    if (m_vertices.empty()) return;
+    if (m_vertices.size() > kMaxVertices)
+        throw std::runtime_error("text vertex buffer overflow — raise kMaxVertices");
+
+    memcpy(m_mapped, m_vertices.data(), m_vertices.size() * sizeof(Vertex));
 }

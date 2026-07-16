@@ -20,6 +20,9 @@
 #define INCLUDE_GLFW_VULKAN
 #include <GLFW/glfw3.h>
 
+// GLM - used everywhere
+#include <glm/glm.hpp>
+
 // Project macros
 #define RED "\e[0;31m"
 #define YELLOW "\e[0;33m"
@@ -36,3 +39,4 @@ class VulkanBuffer;
 class VulkanSync;
 class Camera;
 class Texture;
+class Depth;

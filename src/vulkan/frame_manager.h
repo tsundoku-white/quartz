@@ -7,10 +7,14 @@
 #include "command.h"
 #include "sync.h"
 #include "buffer.h"
+#include "descriptor.h"
 #include "camera.h"
-#include <regex>
+#include "material.h"
+#include "depth.h"
+#include "mesh.h"
 #include <vulkan/vulkan.h>
 #include <vector>
+#include "light.h"
 
 class VulkanFrameManager {
 public:
@@ -22,7 +26,12 @@ public:
         VulkanCommands& commands,
         VulkanSync& sync,
         VulkanBuffer& buffer,
-        Camera& camera
+        Descriptor& descriptor,
+        Camera& camera,
+        Material& quad_material,
+        Depth& depth,
+        Mesh &mesh,
+        SunLight &light
     );
     ~VulkanFrameManager();
     
@@ -37,7 +46,12 @@ private:
     VulkanCommands& m_commands;
     VulkanSync& m_sync;
     VulkanBuffer &m_buffer;
+    Descriptor &m_descriptor;
     Camera &m_camera;
+    Material &m_quad_material;
+    Depth &m_depth;
+    Mesh &m_mesh;
+    SunLight &m_light;
     VkExtent2D m_last_extent{};
     
     std::vector<VkFramebuffer> m_framebuffers;

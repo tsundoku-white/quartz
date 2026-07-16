@@ -4,15 +4,15 @@
 
 Input:
     [x] key log
-    mouse location
-    drag distance
+    [x] mouse location
+    [x] drag distance
 
 Rendering:
     model loader 3d
     [x] textures
     animations
     bloom
-    normal mapping
+    [x] normal mapping
     pbr lighting 
     skybox
     radial lighting (prob voxel based)

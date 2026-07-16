@@ -25,9 +25,10 @@ public:
         VkBuffer vertex_buffer,
         uint32_t vertex_count,
         VkBuffer index_buffer,
-        uint32_t index_count
-    );
-    
+        uint32_t index_count,
+        VkIndexType index_type
+        );
+
     [[nodiscard]] VkCommandBuffer get_command_buffer(uint32_t index) const { return m_command_buffers[index]; }
     [[nodiscard]] VkCommandPool get_command_pool() const { return m_command_pool; }
     

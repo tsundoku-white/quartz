@@ -1,11 +1,14 @@
 #pragma once
 
 #include "../core/core.h"
+#include "src/vulkan/descriptor.h"
 #include <vulkan/vulkan_core.h>
+
+class Depth;
 
 class VulkanRenderer {
   public: 
-    VulkanRenderer(VulkanContext &context, VulkanSwapchain &swapchain, Camera &camera);
+    VulkanRenderer(VulkanContext &context, VulkanSwapchain &swapchain, Descriptor &descriptor, Depth &depth);
     ~VulkanRenderer();
 
     VulkanRenderer(const VulkanRenderer&) = delete;
@@ -27,7 +30,8 @@ class VulkanRenderer {
 
     VulkanContext &m_context;
     VulkanSwapchain &m_swapchain;
-    Camera &m_camera;
+    Descriptor &m_descriptor;
+    Depth      &m_depth;
 
     void create_shader();
     void create_graphics_pipeline();

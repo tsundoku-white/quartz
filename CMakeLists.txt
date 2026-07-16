@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_GENERATOR Ninja)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(FATAL_ERROR "This project requires Ninja. Configure with: cmake --preset default")
+endif()
 
 # Find required packages
 find_package(Vulkan REQUIRED)
@@ -22,10 +27,18 @@ find_path(STB_INCLUDE_DIR stb_image.h, stb_truetype.h, stb_image_write.h
 )
 message("STB include dir: ${STB_INCLUDE_DIR}")
 
+find_path(CGLTF_INCLUDE_DIR cgltf.h
+    PATHS ${CMAKE_SOURCE_DIR}/ext/cgltf
+    REQUIRED
+)
+message("CLGTF include dir: ${CGLTF_INCLUDE_DIR}")
+
 # Add executable
 add_executable(quartz
     src/main.cpp
     src/vulkan/window.cpp
+
+    #vulkan includes
     src/vulkan/context.cpp
     src/vulkan/swapchain.cpp
     src/vulkan/renderer.cpp
@@ -33,9 +46,16 @@ add_executable(quartz
     src/vulkan/sync.cpp
     src/vulkan/buffer.cpp
     src/vulkan/frame_manager.cpp 
+    src/vulkan/descriptor.cpp
+    src/vulkan/depth.cpp
+
+    # components?
     src/vulkan/camera.cpp
     src/vulkan/texture.cpp
-    src/vulkan/text.cpp
+    #src/vulkan/text.cpp
+    src/vulkan/material.cpp
+    src/vulkan/mesh.cpp
+    src/vulkan/light.cpp
 )
 
 target_precompile_headers(quartz PRIVATE
@@ -48,6 +68,7 @@ target_include_directories(quartz PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     ${GLM_INCLUDE_DIR}
     ${STB_INCLUDE_DIR}
+    ${CGLTF_INCLUDE_DIR}
 )
 
 # Link libraries

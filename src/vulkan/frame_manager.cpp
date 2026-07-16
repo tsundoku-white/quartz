@@ -1,26 +1,23 @@
-// frame_manager.cpp
 #include "frame_manager.h"
 #include "buffer.h"
+#include "src/vulkan/descriptor.h"
+#include "src/vulkan/light.h"
+#include "src/vulkan/mesh.h"
 #include <stdexcept>
+#include <vulkan/vulkan.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 VulkanFrameManager::VulkanFrameManager(
-    Window &window,
-    VulkanContext& context,
-    VulkanSwapchain& swapchain,
-    VulkanRenderer& renderer,
-    VulkanCommands& commands,
-    VulkanSync& sync,
-    VulkanBuffer& buffer,
-    Camera& camera
+    Window &window, VulkanContext& context, VulkanSwapchain& swapchain,
+    VulkanRenderer& renderer, VulkanCommands& commands, VulkanSync& sync,
+    VulkanBuffer& buffer, Descriptor& descriptor, Camera& camera, Material& quad_material,
+    Depth& depth, Mesh &mesh, SunLight &light
     )
-    : m_window(window)
-    , m_context(context)
-    , m_swapchain(swapchain)
-    , m_renderer(renderer)
-    , m_commands(commands)
-    , m_sync(sync)
-    , m_buffer(buffer)
-    , m_camera(camera)
+    : m_window(window), m_context(context), m_swapchain(swapchain)
+    , m_renderer(renderer), m_commands(commands), m_sync(sync)
+    , m_buffer(buffer), m_descriptor(descriptor)
+    , m_camera(camera), m_quad_material(quad_material), m_depth(depth), m_mesh(mesh)
+    , m_light(light)
 {
     create_framebuffers();
     m_commands.create_command_buffers(swapchain.get_image_count());
@@ -39,12 +36,12 @@ void VulkanFrameManager::create_framebuffers()
     m_framebuffers.resize(imageViews.size());
     
     for (size_t i = 0; i < imageViews.size(); i++) {
-        VkImageView attachments[] = { imageViews[i] };
+        VkImageView attachments[] = { imageViews[i], m_depth.get_image_view() };
         
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = m_renderer.get_render_pass();
-        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.attachmentCount = 2;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = m_swapchain.get_extent().width;
         framebufferInfo.height = m_swapchain.get_extent().height;
@@ -58,10 +55,11 @@ void VulkanFrameManager::create_framebuffers()
 
 void VulkanFrameManager::draw_frame()
 {
-  auto [w, h] = m_window.get_framebuffer_size();
-    if (static_cast<uint32_t>(w) != m_last_extent.width ||
-        static_cast<uint32_t>(h) != m_last_extent.height
-        && w > 0 && h > 0)
+    auto [w, h] = m_window.get_framebuffer_size();
+
+    if ((static_cast<uint32_t>(w) != m_last_extent.width ||
+         static_cast<uint32_t>(h) != m_last_extent.height) &&
+        w > 0 && h > 0)
     {
         recreate_swapchain();
         m_last_extent = m_swapchain.get_extent();
@@ -89,21 +87,21 @@ void VulkanFrameManager::draw_frame()
     }
 
     m_camera.update(m_current_frame, m_swapchain.get_extent());
+    m_mesh.update(m_current_frame);
+    m_light.update(m_current_frame);
 
     VkCommandBuffer command_buffer = m_commands.get_command_buffer(m_current_frame);
     vkResetCommandBuffer(command_buffer, 0);
-    m_commands.record_command_buffer(
+    
+    m_mesh.record(
+        m_commands,
         m_current_frame,
         m_renderer.get_render_pass(),
         m_framebuffers[image_index],
         m_renderer.get_pipeline(),
         m_renderer.get_pipeline_layout(),
-        m_camera.get_descriptor_set(m_current_frame),
-        m_swapchain.get_extent(),
-        m_buffer.get_vertex_buffer(),
-        m_buffer.get_vertex_count(),
-        m_buffer.get_index_buffer(),
-        m_buffer.get_index_count()
+        m_quad_material.get_descriptor_set(m_current_frame),
+        m_swapchain.get_extent()
     );
 
     VkSubmitInfo submit_info{};
@@ -117,6 +115,7 @@ void VulkanFrameManager::draw_frame()
 
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buffer;
+
 
     VkSemaphore signal_semaphores[] = { m_sync.get_render_finished(image_index) };
     submit_info.signalSemaphoreCount = 1;
@@ -157,6 +156,8 @@ void VulkanFrameManager::recreate_swapchain()
     cleanup_framebuffers();  
     m_swapchain.cleanup();
     m_swapchain.create();
+    m_depth.cleanup();
+    m_depth.create_depth_resources(m_swapchain.get_extent());
     create_framebuffers(); 
     std::print("Recreate swapchain\n");
 }

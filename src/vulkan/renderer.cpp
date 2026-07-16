@@ -1,12 +1,15 @@
 #include "renderer.h"
 #include "context.h"
 #include "swapchain.h"
+#include <array>
 #include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 #include "buffer.h"
 #include "camera.h"
+#include "descriptor.h"
+#include "depth.h"
 
 static std::vector<char> read_file(const std::string& filename)
 {
@@ -67,18 +70,49 @@ void VulkanRenderer::create_render_pass()
   VkAttachmentReference colorAttachmentRef{};
   colorAttachmentRef.attachment = 0;
   colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-  VkSubpassDescription subpass{};
 
+  VkAttachmentDescription depthAttachment{};
+  depthAttachment.format = m_depth.get_format();
+  depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference depthAttachmentRef{};
+  depthAttachmentRef.attachment = 1;
+  depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+
+  VkSubpassDescription subpass{};
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &colorAttachmentRef;
+  subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+  VkSubpassDependency dependency{};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.srcAccessMask = 0;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+  std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
 
   VkRenderPassCreateInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassInfo.attachmentCount = 1;
-  renderPassInfo.pAttachments = &colorAttachment;
+  renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+  renderPassInfo.pAttachments = attachments.data();
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpass;
+  renderPassInfo.dependencyCount = 1;
+  renderPassInfo.pDependencies = &dependency;
 
   if (vkCreateRenderPass(m_context.get_device(), &renderPassInfo, nullptr, &m_render_pass) != VK_SUCCESS) {
     throw std::runtime_error(RED "failed to create render pass" RESET);
@@ -193,10 +227,15 @@ void VulkanRenderer::create_graphics_pipeline()
     color_blending.blendConstants[2] = 0.0f;
     color_blending.blendConstants[3] = 0.0f;
 
-    // The descriptor set layout (UBO @ binding 0 + combined image sampler @ binding 1)
-    // is owned and built by Camera, since Camera also owns the pool/sets/writes for it.
-    // Pipeline creation only needs to reference the finished layout.
-    VkDescriptorSetLayout set_layout = m_camera.get_descriptor_set_layout();
+    VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+    depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil.depthTestEnable = VK_TRUE;
+    depth_stencil.depthWriteEnable = VK_TRUE;
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+
+    VkDescriptorSetLayout set_layout = m_descriptor.get_layout();
 
     VkPipelineLayoutCreateInfo pipeline_layout_info{};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -228,7 +267,7 @@ void VulkanRenderer::create_graphics_pipeline()
     pipeline_info.pViewportState = &viewport_state;
     pipeline_info.pRasterizationState = &rasterizer;
     pipeline_info.pMultisampleState = &multisampling;
-    pipeline_info.pDepthStencilState = nullptr; 
+    pipeline_info.pDepthStencilState = &depth_stencil;
     pipeline_info.pColorBlendState = &color_blending;
     pipeline_info.pDynamicState = &dynamic_state;
     pipeline_info.layout = m_pipeline_layout;
@@ -247,10 +286,11 @@ void VulkanRenderer::create_graphics_pipeline()
     vkDestroyShaderModule(m_context.get_device(), fragment_shader_module, nullptr);
 }
 
-VulkanRenderer::VulkanRenderer(VulkanContext& context, VulkanSwapchain& swapchain, Camera &camera)
+VulkanRenderer::VulkanRenderer(VulkanContext& context, VulkanSwapchain& swapchain, Descriptor &descriptor, Depth &depth)
     : m_context(context)
     , m_swapchain(swapchain)
-    , m_camera(camera)
+    , m_descriptor(descriptor)
+    , m_depth(depth)
 {
     try {
         create_render_pass();

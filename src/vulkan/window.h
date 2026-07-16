@@ -2,6 +2,7 @@
 
 #include "../core/core.h"
 #include <unordered_map>
+#include <glm/vec2.hpp>
 
 struct GLFWwindow;
 
@@ -147,8 +148,8 @@ class Window {
 
     [[nodiscard]] constexpr uint32_t get_width() const  { return m_width;  }
     [[nodiscard]] constexpr uint32_t get_height() const { return m_height; } 
-    [[nodiscard]] bool should_close() const { return glfwWindowShouldClose(m_handle); }
-    [[nodiscard]] GLFWwindow* get_handle() const { return m_handle; }
+    [[nodiscard]] bool should_close() const             { return glfwWindowShouldClose(m_handle); }
+    [[nodiscard]] GLFWwindow* get_handle() const        { return m_handle; }
 
     [[nodiscard]] std::pair<int, int> get_framebuffer_size() const {
       int w, h;
@@ -162,11 +163,15 @@ class Window {
       glfwSetWindowShouldClose(m_handle, value ? GLFW_TRUE : GLFW_FALSE);
     }
 
-    bool is_key_pressed(Key key, PRESSED_TYPE pt = LOOP);
+    bool      is_key_pressed(Key key, PRESSED_TYPE pt = LOOP);
+    glm::vec2 get_mouse_loc();
+    glm::vec2 get_mouse_delta();
   private:
     GLFWwindow   *m_handle  = nullptr;
     uint32_t      m_width   = 600;
     uint32_t      m_height  = 600;
     std::string   m_title   = "untitled";
     std::unordered_map<int, bool> m_key_was_pressed;
+    glm::vec2     m_last_mouse_pos = {0.0f, 0.0f};
+    bool          m_first_mouse    = true;
 };
