@@ -1,8 +1,10 @@
 #include "frame_manager.h"
 #include "buffer.h"
+#include "src/vulkan/camera.h"
 #include "src/vulkan/descriptor.h"
 #include "src/vulkan/light.h"
 #include "src/vulkan/mesh.h"
+#include <print>
 #include <vector>
 
 VulkanFrameManager::VulkanFrameManager(
@@ -15,6 +17,7 @@ VulkanFrameManager::VulkanFrameManager(
     VulkanBuffer& buffer,
     Descriptor& descriptor,
     CameraState& camera,
+    TransformPool& transforms,
     Depth& depth,
     MeshPool& meshes,
     TexturePool& textures,
@@ -29,6 +32,7 @@ VulkanFrameManager::VulkanFrameManager(
     m_buffer(buffer),
     m_descriptor(descriptor),
     m_camera(camera),
+    m_transforms(transforms),
     m_depth(depth),
     m_meshes(meshes),
     m_textures(textures),
@@ -102,8 +106,7 @@ void VulkanFrameManager::draw_frame()
         throw std::runtime_error("Failed to acquire swapchain image");
     }
 
-    camera_system::update(m_camera, m_current_frame, m_swapchain.get_extent());
-    mesh_system::update_all(m_meshes, m_current_frame);
+    mesh_system::update_all(m_meshes, m_transforms,m_current_frame);
     m_light.update(m_current_frame);
 
     VkCommandBuffer command_buffer = m_commands.get_command_buffer(m_current_frame);
@@ -124,25 +127,15 @@ void VulkanFrameManager::draw_frame()
         m_swapchain.get_extent()
     );
 
-    // DRAW mesh 
-    for (uint32_t i = 0; i < m_meshes.count; i++) {
-        if (m_meshes.vertex_buffer[i] == VK_NULL_HANDLE) continue;
-         
-        MeshHandle handle{ i };
-        
-        m_commands.record_command_buffer(
-            m_current_frame,
-            m_renderer.get_pipeline(),
-            m_renderer.get_pipeline_layout(),
-            mesh_system::get_material_descriptor(m_meshes, m_materials, handle, m_current_frame),
-            m_swapchain.get_extent(),
-            mesh_system::get_vertex_buffer(m_meshes, handle),
-            mesh_system::get_vertex_count(m_meshes, handle),
-            mesh_system::get_index_buffer(m_meshes, handle),
-            mesh_system::get_index_count(m_meshes, handle),
-            VK_INDEX_TYPE_UINT32
-        );
-    }
+// 3d
+camera_system::set_perspective(m_camera, true);
+camera_system::update(m_camera, m_transforms, m_current_frame, m_swapchain.get_extent());
+world_pass();
+
+// 2d
+camera_system::set_perspective(m_camera, false);
+ui_pass();
+camera_system::update(m_camera, m_transforms, m_current_frame, m_swapchain.get_extent());
 
     m_commands.end_render_pass(command_buffer);
 
@@ -221,4 +214,29 @@ void VulkanFrameManager::cleanup_framebuffers()
 void VulkanFrameManager::cleanup()
 {
     cleanup_framebuffers();
+}
+
+void VulkanFrameManager::world_pass()
+{
+    for (uint32_t i = 0; i < m_meshes.count; i++) {
+        if (m_meshes.vertex_buffer[i] == VK_NULL_HANDLE) continue;
+         
+        MeshHandle handle{ i };
+        
+        m_commands.record_command_buffer(
+            m_current_frame,
+            m_renderer.get_pipeline(),
+            m_renderer.get_pipeline_layout(),
+            mesh_system::get_material_descriptor(m_meshes, m_materials, handle, m_current_frame),
+            m_swapchain.get_extent(),
+            mesh_system::get_vertex_buffer(m_meshes, handle),
+            mesh_system::get_vertex_count(m_meshes, handle),
+            mesh_system::get_index_buffer(m_meshes, handle),
+            mesh_system::get_index_count(m_meshes, handle),
+            VK_INDEX_TYPE_UINT32
+        );
+    }
+}
+void VulkanFrameManager::ui_pass()
+{
 }

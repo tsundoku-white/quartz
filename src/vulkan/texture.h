@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/core.h"
+#include "src/vulkan/context.h"
 
 struct TextureHandle
 {
@@ -29,7 +30,7 @@ namespace texture_system
     TextureHandle create(TexturePool& pool, VulkanContext& context, VulkanSwapchain& swapchain, VulkanBuffer& buffer,
                           const std::string& path = "assets/textures/green.png");
 
-    void destroy(VulkanContext& context, TexturePool& pool, TextureHandle handle);
+    void destroy(VulkanContext &conntext, TexturePool& pool, TextureHandle handle);
     void destroy_all(VulkanContext& context, TexturePool& pool);
 
     [[nodiscard]] inline VkSampler get_sampler(const TexturePool& pool, TextureHandle handle)

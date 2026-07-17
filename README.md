@@ -36,7 +36,7 @@ Make sure the following are installed on your system:
 
 ### External Libraries (in `/ext`)
 
-- [glTF](https://github.com/sketchfab/gltf)  
+- [cgltf](https://github.com/jkuhlmann/cgltf)  
 - [GLM](https://github.com/g-truc/glm)  
 - [stb](https://github.com/nothings/stb)  
 

@@ -102,7 +102,7 @@ void Descriptor::create_uniform_buffers()
 
 void Descriptor::create_descriptor_pool()
 {
-  constexpr uint32_t kMaxMaterials = 16;
+  constexpr uint32_t kMaxMaterials = 2048;
 
   std::array<VkDescriptorPoolSize, 2> pool_sizes{};
   pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -115,6 +115,7 @@ void Descriptor::create_descriptor_pool()
   pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
   pool_info.pPoolSizes = pool_sizes.data();
   pool_info.maxSets = static_cast<uint32_t>(m_sync.get_frame_count()) * kMaxMaterials;
+  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
   if (vkCreateDescriptorPool(m_context.get_device(), &pool_info, nullptr, &m_descriptor_pool) != VK_SUCCESS)
   {

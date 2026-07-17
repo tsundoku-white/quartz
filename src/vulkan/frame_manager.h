@@ -17,13 +17,16 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "light.h"
+#include "transform.h"
 
 class VulkanFrameManager {
 public:
 VulkanFrameManager(
     Window &window, VulkanContext& context, VulkanSwapchain& swapchain,
     VulkanRenderer& renderer, VulkanCommands& commands, VulkanSync& sync,
-    VulkanBuffer& buffer, Descriptor& descriptor, CameraState& camera, Depth& depth,
+    VulkanBuffer& buffer, Descriptor& descriptor, CameraState& camera,
+    TransformPool& transforms,
+    Depth& depth,
     MeshPool& meshes, TexturePool& textures, MaterialPool& materials, SunLight &light
     );
     ~VulkanFrameManager();
@@ -41,6 +44,7 @@ private:
     VulkanBuffer &m_buffer;
     Descriptor &m_descriptor;
     CameraState &m_camera;
+    TransformPool &m_transforms;
     Depth &m_depth;
     MeshPool &m_meshes;
     TexturePool &m_textures;
@@ -54,4 +58,7 @@ private:
     void create_framebuffers();
     void recreate_swapchain();
     void cleanup_framebuffers();
+
+    void ui_pass();
+    void world_pass();
 };

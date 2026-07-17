@@ -56,6 +56,7 @@ add_executable(quartz
     src/vulkan/material.cpp
     src/vulkan/mesh.cpp
     src/vulkan/light.cpp
+    src/vulkan/transform.cpp
 )
 
 target_precompile_headers(quartz PRIVATE

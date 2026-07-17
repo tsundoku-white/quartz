@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <vulkan/vulkan_core.h>
+#include "transform.h"
 
 struct MeshHandle
 {
@@ -27,18 +28,21 @@ struct MeshPool
     std::vector<std::vector<VkDeviceMemory>> mesh_ubo_memory;
     std::vector<std::vector<void*>>          mesh_ubo_mapped;
 
-    std::vector<glm::vec3> position;
-    std::vector<bool>      lod_enabled;
+    std::vector<TransformHandle> transform;
 
     std::vector<TextureHandle>  texture;
     std::vector<MaterialHandle> material;
+    std::vector<std::string>    model_path;
+
+    std::vector<bool>      lod_enabled;
 
     uint32_t count = 0;
+
 };
 
 namespace mesh_system
 {
-    MeshHandle create(MeshPool& pool);
+    MeshHandle create(MeshPool& pool, TransformPool &transforms);
 
     void load(
         VulkanContext&      context,
@@ -49,16 +53,16 @@ namespace mesh_system
         TexturePool&        texture_pool,
         MaterialPool&       material_pool,
         MeshHandle          handle,
-        const std::string&  model_path   = "assets/shapes/capsule_low.glb",
-        const std::string&  texture_path = "assets/textures/smile.png"
+        const std::string&  model_path   = "assets/shapes/cube.glb",
+        const std::string&  texture_path = "assets/textures/text.png"
     );
 
     void destroy(VulkanContext& context, MeshPool& pool, MeshHandle handle);
     void destroy_all(VulkanContext& context, MeshPool& pool);
 
-    void update_all(MeshPool& pool, uint32_t current_frame);
+    void update_all(MeshPool& pool, TransformPool &transforms, uint32_t current_frame);
 
-    void set_position(MeshPool& pool, MeshHandle handle, glm::vec3 location);
+    void set_position(MeshPool& pool, MeshHandle handle, TransformPool &transforms, glm::vec3 location);
     void set_lod(MeshPool& pool, MeshHandle handle, bool value);
 
     void record_all(

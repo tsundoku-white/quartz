@@ -294,9 +294,6 @@ TextureHandle texture_system::create(TexturePool& pool, VulkanContext& context, 
     pool.path.push_back(path);
 
     pool.count++;
-
-    std::print(GREEN "PASS:  " RESET "create texture\n");
-
     return handle;
 }
 
