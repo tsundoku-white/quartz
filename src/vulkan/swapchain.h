@@ -1,15 +1,6 @@
 #pragma once
-#include "../core/core.h"
-#include <set>
-#include <string>
-#include <vector>
-#include <vulkan/vulkan_core.h>
 
-struct SwapChainSupportDetails {
-  VkSurfaceCapabilitiesKHR capabilities;
-  std::vector<VkSurfaceFormatKHR> formats;
-  std::vector<VkPresentModeKHR> present_modes;
-};
+#include "../core/core.h"
 
 class VulkanSwapchain {
   public: 

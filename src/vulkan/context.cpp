@@ -1,14 +1,6 @@
 #include "context.h"
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <stdexcept>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 #include "../core/core.h"
 #include "window.h"
-#include <vector>
-#include <set>
 
 const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"

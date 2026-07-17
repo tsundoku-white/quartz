@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../core/core.h"
-#include "context.h"
-#include "src/vulkan/swapchain.h"
 
 class Depth
 {

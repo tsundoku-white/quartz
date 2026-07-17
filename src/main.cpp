@@ -18,13 +18,11 @@
 #include <cstdio>
 #include <chrono>
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <glm/ext/vector_float2.hpp>
 #include <print>
-
-// You might want to define these mouse variables
-static float mouse_x = 0.0f;
-static float mouse_y = 0.0f;
-static bool first_mouse = true;
+#include <vector>
 
 int main() {
   try {
@@ -34,23 +32,41 @@ int main() {
     VulkanSync          sync        (context, swapchain);
     VulkanBuffer        buffer      (context);
     Descriptor          descriptor  (context, swapchain, sync, buffer);
-    Camera              camera      (swapchain, descriptor);
-    Texture             texture     (context, swapchain, buffer);
+    CameraState         camera      = camera_system::create(swapchain, descriptor);
+    
     Depth               depth       (context, swapchain);
     VulkanRenderer      renderer    (context, swapchain, descriptor, depth);
     VulkanCommands      commands    (context);
-    Material            material    (context, descriptor, texture);
-    Mesh                mesh        (context, swapchain, descriptor, buffer);
-    SunLight            light       (descriptor); 
+
+    SunLight            light       (descriptor);
+
+    TexturePool  textures;
+    MaterialPool materials;
+    MeshPool     meshes;
+
+    std::vector<MeshHandle> mesh_handles;
+
+    for (int i = 0; i < 5; i++) {
+        MeshHandle h = mesh_system::create(meshes);
+        mesh_system::load(
+            context, swapchain, descriptor, buffer,
+            meshes, textures, materials, h
+        );
+        mesh_handles.push_back(h);
+    }
+
+    mesh_system::set_position(meshes, mesh_handles[0], {0.0f, 0.0f, 0.0f});
+    mesh_system::set_position(meshes, mesh_handles[1], {3.0f, 0.0f, 0.0f});
+    mesh_system::set_position(meshes, mesh_handles[2], {6.0f, 0.0f, 0.0f});
+    mesh_system::set_position(meshes, mesh_handles[3], {9.0f, 0.0f, 0.0f});
+    mesh_system::set_position(meshes, mesh_handles[4], {12.0f, 0.0f, 0.0f});
 
     VulkanFrameManager  frameManager(window, context, swapchain, renderer,
-        commands, sync, buffer, descriptor, camera, material, depth, mesh, light);
+        commands, sync, buffer, descriptor, camera, depth, meshes, textures, materials, light);
 
     using Clock = std::chrono::high_resolution_clock;
     Clock::time_point lastFrameTime = Clock::now();
     constexpr float kMaxDeltaTime = 0.1f; 
-
-    bool is_printing = false;
 
     while (!window.should_close()) {
       Clock::time_point currentFrameTime = Clock::now();
@@ -61,57 +77,65 @@ int main() {
 
       window.poll_events();
  
-      // Exit
+
       if (window.is_key_pressed(KEY_F1)) { 
         window.set_should_close(true); 
       }
 
-      // Movement - Forward/Backward
+
       if (window.is_key_pressed(KEY_W)) {
-        camera.move(camera.get_forward_vector(), delta_time);
+        camera_system::move(camera, camera_system::get_forward_vector(camera), delta_time);
       }
       if (window.is_key_pressed(KEY_S)) {
-        camera.move(-camera.get_forward_vector(), delta_time);
+        camera_system::move(camera, -camera_system::get_forward_vector(camera), delta_time);
       }
 
-      // Movement - Strafe Left/Right
+
       if (window.is_key_pressed(KEY_A)) {
-        camera.move(-camera.get_right_vector(), delta_time);
+        camera_system::move(camera, -camera_system::get_right_vector(camera), delta_time);
       }
       if (window.is_key_pressed(KEY_D)) {
-        camera.move(camera.get_right_vector(), delta_time);
+        camera_system::move(camera, camera_system::get_right_vector(camera), delta_time);
       }
 
-      // Movement - Up/Down
+
       if (window.is_key_pressed(KEY_SPACE)) {
-        camera.move(glm::vec3(0, 1, 0), delta_time);
+        camera_system::move(camera, glm::vec3(0, 1, 0), delta_time);
       }
       if (window.is_key_pressed(KEY_LEFT_SHIFT)) {
-        camera.move(glm::vec3(0, -1, 0), delta_time);
+        camera_system::move(camera, glm::vec3(0, -1, 0), delta_time);
       }
 
-      if (window.is_key_pressed(KEY_F2, ONCE))
-      {
+
+      if (window.is_key_pressed(KEY_F2, ONCE)) {
         float fps = 1 / delta_time;
         std::print("FPS: {}\n", fps);
       }
 
-      if (window.is_key_pressed(KEY_F4, ONCE)) 
-      {
-        glm::vec2 loc =  window.get_mouse_delta();
+      if (window.is_key_pressed(KEY_F3, ONCE)) {
+        glm::vec3 forward = camera_system::get_forward_vector(camera);
+        std::print("Camera position: ({:.2f}, {:.2f}, {:.2f})\n", 
+            camera.position.x, camera.position.y, camera.position.z);
+        std::print("Camera forward: ({:.2f}, {:.2f}, {:.2f})\n", 
+            forward.x, forward.y, forward.z);
+      }
+
+      if (window.is_key_pressed(KEY_F4, ONCE)) {
+        glm::vec2 loc = window.get_mouse_delta();
         std::print("mouse: {}, {}\n", loc.x, loc.y);
       }
 
-      glm::vec2 md = window.get_mouse_delta();
-      camera.rot(-md.y * 0.2f, -md.x * 0.2f, 0.0f);
 
+      glm::vec2 md = window.get_mouse_delta();
+      camera_system::rot(camera, -md.y * 0.2f, -md.x * 0.2f, 0.0f);
 
       frameManager.draw_frame();
     }
     context.wait_idle();
+    mesh_system::destroy_all(context, meshes);
+    texture_system::destroy_all(context, textures);
   } 
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     std::print(RED "Error: " RESET "{}\n", e.what());
     return -1;
   }

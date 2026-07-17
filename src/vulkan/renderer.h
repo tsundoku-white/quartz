@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../core/core.h"
-#include "src/vulkan/descriptor.h"
-#include <vulkan/vulkan_core.h>
 
 class Depth;
 

@@ -10,34 +10,27 @@
 #include "descriptor.h"
 #include "camera.h"
 #include "material.h"
+#include "texture.h"
 #include "depth.h"
 #include "mesh.h"
+#include <memory>
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "light.h"
 
 class VulkanFrameManager {
 public:
-    VulkanFrameManager(
-        Window &window,
-        VulkanContext& context,
-        VulkanSwapchain& swapchain,
-        VulkanRenderer& renderer,
-        VulkanCommands& commands,
-        VulkanSync& sync,
-        VulkanBuffer& buffer,
-        Descriptor& descriptor,
-        Camera& camera,
-        Material& quad_material,
-        Depth& depth,
-        Mesh &mesh,
-        SunLight &light
+VulkanFrameManager(
+    Window &window, VulkanContext& context, VulkanSwapchain& swapchain,
+    VulkanRenderer& renderer, VulkanCommands& commands, VulkanSync& sync,
+    VulkanBuffer& buffer, Descriptor& descriptor, CameraState& camera, Depth& depth,
+    MeshPool& meshes, TexturePool& textures, MaterialPool& materials, SunLight &light
     );
     ~VulkanFrameManager();
-    
+
     void draw_frame();
     void cleanup();
-    
+
 private:
     Window &m_window;
     VulkanContext& m_context;
@@ -47,16 +40,17 @@ private:
     VulkanSync& m_sync;
     VulkanBuffer &m_buffer;
     Descriptor &m_descriptor;
-    Camera &m_camera;
-    Material &m_quad_material;
+    CameraState &m_camera;
     Depth &m_depth;
-    Mesh &m_mesh;
+    MeshPool &m_meshes;
+    TexturePool &m_textures;
+    MaterialPool &m_materials;
     SunLight &m_light;
     VkExtent2D m_last_extent{};
-    
+
     std::vector<VkFramebuffer> m_framebuffers;
     uint32_t m_current_frame = 0;
-    
+
     void create_framebuffers();
     void recreate_swapchain();
     void cleanup_framebuffers();

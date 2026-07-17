@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <fstream>
 #include <stdexcept>
-#include <vulkan/vulkan_core.h>
 #include "buffer.h"
 #include "camera.h"
 #include "descriptor.h"

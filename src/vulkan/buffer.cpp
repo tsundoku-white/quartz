@@ -1,11 +1,7 @@
 #include "buffer.h"
 #include "context.h"
-#include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
-VulkanBuffer::VulkanBuffer(VulkanContext &context) : m_context(context)
-{
-}
+VulkanBuffer::VulkanBuffer(VulkanContext &context) : m_context(context) {}
 
 uint32_t VulkanBuffer::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties)
 {

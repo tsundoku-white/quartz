@@ -1,9 +1,6 @@
 #include "swapchain.h"
 #include "context.h"
 #include "window.h"
-#include <set>
-#include <string>
-#include <vector>
 
 const std::vector<const char*> device_extensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME

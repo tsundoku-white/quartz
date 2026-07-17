@@ -3,9 +3,6 @@
 #include "buffer.h"
 #include "swapchain.h"
 #include "sync.h"
-#include <array>
-#include <stdexcept>
-#include <vulkan/vulkan_core.h>
 #include "camera.h"
 #include "mesh.h"
 #include "light.h"
@@ -80,11 +77,9 @@ void Descriptor::create_descriptor_layout()
 
 void Descriptor::create_uniform_buffers()
 {
-  // Calculate total size needed for both UBOs
   VkDeviceSize camera_buffer_size = sizeof(CAMERA_UBO);
-  VkDeviceSize mesh_buffer_size   = sizeof(MESH_UBO);
   VkDeviceSize sun_buffer_size    = sizeof(SUN_UBO);
-  VkDeviceSize total_buffer_size  = camera_buffer_size + mesh_buffer_size + sun_buffer_size;
+  VkDeviceSize total_buffer_size  = camera_buffer_size + sun_buffer_size;
 
   m_uniform_buffers.resize(m_sync.get_frame_count());
   m_uniform_buffers_memory.resize(m_sync.get_frame_count());

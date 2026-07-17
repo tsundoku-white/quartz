@@ -1,4 +1,6 @@
 #include "depth.h"
+#include "context.h"
+#include "swapchain.h"
 
 Depth::Depth(VulkanContext& context, VulkanSwapchain &swapchain)
     : m_context(context), m_swapchain(swapchain)

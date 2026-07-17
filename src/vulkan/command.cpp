@@ -1,7 +1,5 @@
 #include "command.h"
-#include <array>
-#include <cstdint>
-#include <stdexcept>
+#include "context.h"
 
 VulkanCommands::VulkanCommands(VulkanContext& context) 
     : m_context(context)
@@ -47,26 +45,29 @@ void VulkanCommands::allocate_command_buffers(uint32_t image_count) {
     }
 }
 
-void VulkanCommands::record_command_buffer(
-    uint32_t frame_index,
+void VulkanCommands::begin_command_buffer(VkCommandBuffer buffer) {
+    VkCommandBufferBeginInfo begin_info{};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = 0;
+    begin_info.pInheritanceInfo = nullptr;
+    
+    if (vkBeginCommandBuffer(buffer, &begin_info) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin command buffer");
+    }
+}
+
+void VulkanCommands::end_command_buffer(VkCommandBuffer buffer) {
+    if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end command buffer");
+    }
+}
+
+void VulkanCommands::begin_render_pass(
+    VkCommandBuffer command_buffer,
     VkRenderPass render_pass,
     VkFramebuffer framebuffer,
-    VkPipeline pipeline,
-    VkPipelineLayout pipeline_layout,
-    VkDescriptorSet descriptor_set,
-    VkExtent2D extent,
-    VkBuffer vertex_buffer,
-    uint32_t vertex_count,
-    VkBuffer index_buffer,
-    uint32_t index_count,
-    VkIndexType index_type
-)
+    VkExtent2D extent)
 {
-    
-    VkCommandBuffer command_buffer = m_command_buffers[frame_index];
-    
-    begin_command_buffer(command_buffer);
-    
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_info.renderPass = render_pass;
@@ -81,9 +82,28 @@ void VulkanCommands::record_command_buffer(
     render_pass_info.pClearValues = clear_values.data();
     
     vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanCommands::end_render_pass(VkCommandBuffer command_buffer) {
+    vkCmdEndRenderPass(command_buffer);
+}
+
+void VulkanCommands::record_command_buffer(
+    uint32_t frame_index,
+    VkPipeline pipeline,
+    VkPipelineLayout pipeline_layout,
+    VkDescriptorSet descriptor_set,
+    VkExtent2D extent,
+    VkBuffer vertex_buffer,
+    uint32_t vertex_count,
+    VkBuffer index_buffer,
+    uint32_t index_count,
+    VkIndexType index_type
+)
+{
+    VkCommandBuffer command_buffer = m_command_buffers[frame_index];
     
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
 
@@ -107,24 +127,4 @@ void VulkanCommands::record_command_buffer(
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, index_type);
 
     vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
-
-    vkCmdEndRenderPass(command_buffer);
-    end_command_buffer(command_buffer);
-}
-
-void VulkanCommands::begin_command_buffer(VkCommandBuffer buffer) {
-    VkCommandBufferBeginInfo begin_info{};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = 0;
-    begin_info.pInheritanceInfo = nullptr;
-    
-    if (vkBeginCommandBuffer(buffer, &begin_info) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to begin command buffer");
-    }
-}
-
-void VulkanCommands::end_command_buffer(VkCommandBuffer buffer) {
-    if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to end command buffer");
-    }
 }

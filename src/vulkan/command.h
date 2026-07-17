@@ -1,9 +1,5 @@
 #pragma once
-#include "context.h"
-#include <cstdint>
-#include <vulkan/vulkan.h>
-#include <vector>
-#include <vulkan/vulkan_core.h>
+#include "../core/core.h"
 
 class VulkanCommands {
 public:
@@ -14,10 +10,16 @@ public:
     VulkanCommands operator=(const VulkanCommands) = delete;
 
     void create_command_buffers(uint32_t count);
-    void record_command_buffer(
-        uint32_t frame_index,
+    
+    void begin_render_pass(
+        VkCommandBuffer command_buffer,
         VkRenderPass render_pass,
         VkFramebuffer framebuffer,
+        VkExtent2D extent);
+    void end_render_pass(VkCommandBuffer command_buffer);
+    
+    void record_command_buffer(
+        uint32_t frame_index,
         VkPipeline pipeline,
         VkPipelineLayout pipeline_layout,
         VkDescriptorSet descriptor_set,
@@ -27,7 +29,7 @@ public:
         VkBuffer index_buffer,
         uint32_t index_count,
         VkIndexType index_type
-        );
+    );
 
     [[nodiscard]] VkCommandBuffer get_command_buffer(uint32_t index) const { return m_command_buffers[index]; }
     [[nodiscard]] VkCommandPool get_command_pool() const { return m_command_pool; }

@@ -1,7 +1,6 @@
-// sync.cpp
 #include "sync.h"
+#include "context.h"
 #include "swapchain.h"
-#include <stdexcept>
 
 VulkanSync::VulkanSync(VulkanContext& context, VulkanSwapchain &swapchain)
     : m_context(context)

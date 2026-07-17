@@ -1,8 +1,6 @@
 #pragma once
 
-#include "context.h"
-#include <vulkan/vulkan.h>
-#include <vector>
+#include "../core/core.h"
 
 class VulkanSync {
 public:

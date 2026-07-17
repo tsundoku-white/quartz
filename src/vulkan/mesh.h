@@ -1,67 +1,99 @@
 #pragma once
-
+#include "../core/core.h"
+#include "texture.h"
 #include "material.h"
-#include "buffer.h"
-#include "command.h"
-#include "src/vulkan/swapchain.h"
-#include "src/vulkan/texture.h"
 #include <cstdint>
-#include <strings.h>
 #include <vector>
+#include <string>
 #include <vulkan/vulkan_core.h>
 
-struct alignas(16) MESH_UBO
+struct MeshHandle
 {
-  glm::mat4 model;
+    uint32_t index = UINT32_MAX;
+    [[nodiscard]] bool is_valid() const { return index != UINT32_MAX; }
 };
 
-class Mesh
+struct MeshPool
 {
-public:
-    Mesh(VulkanContext& context, VulkanSwapchain &swapchain, Descriptor& descriptor, VulkanBuffer& buffer);
-    ~Mesh();
+    std::vector<std::vector<Vertex>>   vertices;
+    std::vector<std::vector<uint32_t>> indices;
 
-    void load(std::string model_path = "assets/shapes/capsule_low.glb",
-              std::string texture_path = "assets/textures/default_texture.jpg");
+    std::vector<VkBuffer>       vertex_buffer;
+    std::vector<VkDeviceMemory> vertex_buffer_memory;
+    std::vector<VkBuffer>       index_buffer;
+    std::vector<VkDeviceMemory> index_buffer_memory;
 
-    void update(uint32_t current_frame);
+    std::vector<std::vector<VkBuffer>>       mesh_ubo_buffer;
+    std::vector<std::vector<VkDeviceMemory>> mesh_ubo_memory;
+    std::vector<std::vector<void*>>          mesh_ubo_mapped;
 
-    void record(
+    std::vector<glm::vec3> position;
+    std::vector<bool>      lod_enabled;
+
+    std::vector<TextureHandle>  texture;
+    std::vector<MaterialHandle> material;
+
+    uint32_t count = 0;
+};
+
+namespace mesh_system
+{
+    MeshHandle create(MeshPool& pool);
+
+    void load(
+        VulkanContext&      context,
+        VulkanSwapchain&    swapchain,
+        Descriptor&         descriptor,
+        VulkanBuffer&       buffer,
+        MeshPool&           mesh_pool,
+        TexturePool&        texture_pool,
+        MaterialPool&       material_pool,
+        MeshHandle          handle,
+        const std::string&  model_path   = "assets/shapes/capsule_low.glb",
+        const std::string&  texture_path = "assets/textures/smile.png"
+    );
+
+    void destroy(VulkanContext& context, MeshPool& pool, MeshHandle handle);
+    void destroy_all(VulkanContext& context, MeshPool& pool);
+
+    void update_all(MeshPool& pool, uint32_t current_frame);
+
+    void set_position(MeshPool& pool, MeshHandle handle, glm::vec3 location);
+    void set_lod(MeshPool& pool, MeshHandle handle, bool value);
+
+    void record_all(
         VulkanCommands& commands,
+        MeshPool& pool,
         uint32_t frame_index,
-        VkRenderPass render_pass,
         VkFramebuffer framebuffer,
         VkPipeline pipeline,
         VkPipelineLayout pipeline_layout,
         VkDescriptorSet descriptor_set,
-        VkExtent2D extent
-    );
+        VkExtent2D extent);
 
-    [[nodiscard]] VkBuffer get_vertex_buffer() const { return m_vertex_buffer; }
-    [[nodiscard]] VkBuffer get_index_buffer()  const { return m_index_buffer; }
-    [[nodiscard]] uint32_t get_vertex_count()  const { return static_cast<uint32_t>(m_vertex.size()); }
-    [[nodiscard]] uint32_t get_index_count()   const { return static_cast<uint32_t>(m_indices.size()); }
+    [[nodiscard]] inline VkBuffer get_vertex_buffer(const MeshPool& pool, MeshHandle handle)
+    {
+        return pool.vertex_buffer[handle.index];
+    }
 
-    Material& get_material() { return m_material; }
-    Texture& get_texture() { return m_texture; }
+    [[nodiscard]] inline VkBuffer get_index_buffer(const MeshPool& pool, MeshHandle handle)
+    {
+        return pool.index_buffer[handle.index];
+    }
 
-private:
-    VulkanContext& m_context;
-    VulkanBuffer& m_buffer;
-    Descriptor& m_descriptor;
-    
-    Texture  m_texture;  
-    Material m_material;   
-    
-    std::vector<Vertex> m_vertex;
-    std::vector<uint32_t> m_indices;
+    [[nodiscard]] inline uint32_t get_vertex_count(const MeshPool& pool, MeshHandle handle)
+    {
+        return static_cast<uint32_t>(pool.vertices[handle.index].size());
+    }
 
-    VkBuffer       m_vertex_buffer        = VK_NULL_HANDLE;
-    VkDeviceMemory m_vertex_buffer_memory = VK_NULL_HANDLE;
+    [[nodiscard]] inline uint32_t get_index_count(const MeshPool& pool, MeshHandle handle)
+    {
+        return static_cast<uint32_t>(pool.indices[handle.index].size());
+    }
 
-    VkBuffer       m_index_buffer         = VK_NULL_HANDLE;
-    VkDeviceMemory m_index_buffer_memory  = VK_NULL_HANDLE;
-
-    void create_buffers();
-
-};
+    [[nodiscard]] inline VkDescriptorSet get_material_descriptor(
+        const MeshPool& mesh_pool, const MaterialPool& material_pool, MeshHandle handle, uint32_t frame)
+    {
+        return material_system::get_descriptor_set(material_pool, mesh_pool.material[handle.index], frame);
+    }
+}
